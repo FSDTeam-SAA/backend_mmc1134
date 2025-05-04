@@ -69,7 +69,7 @@ io.on("connection", (socket) => {
   console.log("Client connected:", socket.id);
   // Join user room
   socket.on("joinUser", (userId) => {
-    socket.join(userId);
+    socket.join(userId.toString());
     console.log(`User ${socket.id} joined room: ${userId}`);
   });
   // Join auction room

@@ -174,12 +174,15 @@ export const placeBid = async (req, res) => {
       });
       await outbidNotification.save();
 
+      const notiCount = await Notification.countDocuments({user: previousHighestBid.user._id,read: false})
+
       // Emit real-time notification to the previous bidder
       io.to(previousHighestBid.user._id.toString()).emit('notification', {
         message: outbidMessage,
         auctionId: auctionId,
         type: 'outbid',
         createdAt: new Date(),
+        notificationCount: notiCount
       });
     }
 
@@ -195,6 +198,7 @@ export const placeBid = async (req, res) => {
         type: 'newBid',
       });
       await sellerNotification.save();
+      const notiCountSeller = await Notification.countDocuments({user: auction.seller._id,read: false})
 
       // Emit real-time notification to the seller
       io.to(auction.seller._id.toString()).emit('notification', {
@@ -202,6 +206,7 @@ export const placeBid = async (req, res) => {
         auctionId: auctionId,
         type: 'newBid',
         createdAt: new Date(),
+        notificationCount: notiCountSeller
       });
     }
 
@@ -1142,12 +1147,22 @@ export const markNotificationsAsRead = async (req, res) => {
 
     const { notificationIds } = req.body;
 
-    // Validate input
-    if (!notificationIds || !Array.isArray(notificationIds) || notificationIds.length === 0) {
-      return res.status(400).json({
-        status: false,
-        message: 'notificationIds must be a non-empty array',
+    // // Validate input
+    // if (!notificationIds || !Array.isArray(notificationIds) || notificationIds.length === 0) {
+    //   return res.status(400).json({
+    //     status: false,
+    //     message: 'notificationIds must be a non-empty array',
+    //   });
+    // }
+
+    if(!notificationIds || notificationIds.length === 0){
+      const notification = await Notification.updateMany({user: userId},{read: true},{new:true})
+      return res.status(200).json({
+        status: true,
+        message: 'Notifications marked as read successfully',
+        data: notification,
       });
+
     }
 
     // Fetch notifications and ensure they belong to the user
